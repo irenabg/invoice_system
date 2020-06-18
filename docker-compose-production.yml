@@ -1,0 +1,85 @@
+version: '3'
+services:
+  web:
+    image: 'nginx:alpine'
+    volumes:
+      - './etc/nginx/default_prod.conf:/etc/nginx/conf.d/default.conf'
+      - './etc/ssl:/etc/ssl'
+      - './web:/usr/local/www/kosherkaddy.com'
+      - './etc/nginx/default.template_prod.conf:/etc/nginx/conf.d/default.template'
+      - './etc/nginx/rewriterules:/etc/nginx/includes/rewriterules'
+    ports:
+      - '8081:80'
+      - '8084:443'
+      - '8082:81'
+
+    environment:
+      - 'NGINX_HOST=${NGINX_HOST}'
+    command: >-
+      /bin/sh -c "envsubst '$$NGINX_HOST' < /etc/nginx/conf.d/default.template >
+      /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    restart: always
+    depends_on:
+      - php
+      - mysqldb
+  php:
+    build: ./web
+    volumes:
+      - './etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini'
+      - './web:/usr/local/www/kosherkaddy.com'
+
+  mysqldb:
+    build: ./web/mysql-build
+    container_name: '${MYSQL_HOST}'
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - 'MYSQL_HOST=${MYSQL_HOST}'
+      - 'MYSQL_DATABASE=${MYSQL_DATABASE}'
+      - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
+      - 'MYSQL_USER=${MYSQL_USER}'
+      - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+    ports:
+      - '8989:3306'
+    volumes:
+      - './etc/mysql/my.cnf:/etc/alternatives/my.cnf'
+      - '/mysqldb/db/mysql:/var/lib/mysql:rw,delegated'
+
+
+  https-portal:
+     image: steveltn/https-portal:1
+     depends_on:
+       - web
+     ports:
+       - 80:80
+       - 443:443
+     restart: always
+     #
+     # Save our SSL certs between runs so they aren't regenerated on every single run.
+     #
+     volumes:
+       - /ssl_certs:/var/lib/https-portal
+     environment:
+       DOMAINS: 'dev2.kosherkaddy.com -> http://173.255.234.32:8081' # Notice it's "=>" instedad of the normal "->"
+       STAGE: 'production' # Don't use production until staging works
+
+       #DOMAINS: 'YOUR_FQDN -> http://web:80 #staging' # Uncomment when you want to test a staging cert.
+       #DOMAINS: 'YOUR_FQDN -> http://web:80 #production' # Uncomment when you are ready for production.
+       #
+       # Allow larger files to be uploaded
+       #
+       CLIENT_MAX_BODY_SIZE: 64M
+       FORCE_RENEW: 'true'
+
+
+volumes:
+    prometheus-data:
+     driver: local
+     driver_opts:
+       o: bind
+       type: none
+       device: /db
+
+
+
