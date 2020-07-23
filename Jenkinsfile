@@ -31,9 +31,9 @@ sudo docker exec -i $(sudo docker-compose ps -q php) bash -c "php /usr/local/www
 
   }
   post {
-    aborted {
-      deleteDir()
-    }
+   failure {
+   emailext(attachLog: true, saveOutput: true, subject: '$BUILD_STATUS! - $PROJECT_NAME - Build # $BUILD_NUMBER ', body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:  Check console output at $BUILD_URL to view the results.', from: 'jenkins@yeptext.com', replyTo: 'jenkins@yeptext.com', to: 'system@vie-corp.com')
+           }
 
   }
 }

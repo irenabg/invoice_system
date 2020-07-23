@@ -70,7 +70,7 @@ services:
        # Allow larger files to be uploaded
        #
        CLIENT_MAX_BODY_SIZE: 64M
-       FORCE_RENEW: 'true'
+       #FORCE_RENEW: 'true'
 
 
 volumes:

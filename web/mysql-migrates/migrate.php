@@ -28,7 +28,8 @@ class Migrate
     /**
      * Migration file prefix
      */
-    const MIGRATE_FILE_PREFIX = 'migrate-';
+    const MIGRATE_FILE_PREFIX_VESSY = 'vessy-';
+    const MIGRATE_FILE_PREFIX_CECO = 'ceco-';
 
     /**
      * Migration file postfix
@@ -111,57 +112,78 @@ class Migrate
     /**
      * Run migrations
      */
+// Here's a startsWith function
+    function startsWith($haystack, $needle){
+        $length = strlen($needle);
+        return (substr($haystack, 0, $length) === $needle);
+    }
+    function run_sql_file($location){
+        //load file
+        $commands = file_get_contents($location);
+
+        //delete comments
+        $lines = explode("\n",$commands);
+        $commands = '';
+        foreach($lines as $line){
+            $line = trim($line);
+            if( $line && !$this->startsWith($line,'--') ){
+                $commands .= $line . "\n";
+            }
+        }
+
+        //convert to array
+        $commands = explode(";", $commands);
+
+        //run commands
+        $total = $success = 0;
+
+
+        foreach($commands as $command){
+            if(trim($command)){
+                $success += ($this->conn->query($command) ? 0 : 1);
+                $total += 1;
+            }
+        }
+
+        //return number of successful queries and total number of queries found
+        return array(
+            "success" => $success,
+            "total" => $total
+        );
+    }
+
     public function run()
     {
         $files        = $this->getMigrations();
-        $version      = $this->getCurrentVersion();
+        $this->CretateVersionTables();
+
         $migrationDir = $this->getMigrationDirectory();
 
-        // Check to make sure there are no conflicts such as 2 files under the same version.
-        $errors       = [];
-        $last_file    = false;
-        $last_version = false;
+        $found_new=false;
         foreach ($files as $file) {
             $file_version = $this->getVersionFromFile($file);
-            if ($last_version !== false && $last_version === $file_version) {
-                $errors[] = "$last_file --- $file";
-            }
-            $last_version = $file_version;
-            $last_file    = $file;
-        }
-        if (count($errors) > 0) {
-            echo "Error: You have multiple files using the same version. " .
-                 "To resolve, move some of the files up so each one gets a unique version." . PHP_EOL;
-            foreach ($errors as $error) {
-                echo "  $error" . PHP_EOL;
-            }
-            exit;
-        }
 
-        // Run all the new files.
-        $found_new = false;
-        foreach ($files as $file) {
-            $file_version = $this->getVersionFromFile($file);
-            if ($file_version <= $version) {
-                continue;
+            if(!$file_version){
+                echo "Running: $file" . PHP_EOL;
+
+               $result= $this->run_sql_file($migrationDir . $file);
+            //    $query = file_get_contents($migrationDir . $file);
+
+              //  echo $query;
+              //  $this->conn->query($query);
+             //  $this->query($query);
+
+                $this->UpdateVersionFromFile($file,$result);
+                echo "Done." . PHP_EOL;
+
+                 $found_new = true;
             }
 
-            echo "Running: $file" . PHP_EOL;
-            $query = file_get_contents($migrationDir . $file);
-            $this->query($query);
-            echo "Done." . PHP_EOL;
 
-            $version   = $file_version;
-            $found_new = true;
-            // Output the new version number.
-            $f = fopen(static::MIGRATE_VERSION_FILE, 'w');
-            if ($f) {
-                fputs($f, $version);
-                fclose($f);
-            } else {
-                echo "Failed to output new version to " . static::MIGRATE_VERSION_FILE . PHP_EOL;
-            }
         }
+
+
+
         if ($found_new) {
             echo "Migration complete." . PHP_EOL;
         } else {
@@ -175,16 +197,30 @@ class Migrate
      * @return int
      *
      */
-    private function getCurrentVersion()
+    private function CretateVersionTables()
     {
-        $version = 0;
-        $f       = @fopen(static::MIGRATE_VERSION_FILE, 'r');
-        if ($f) {
-            $version = intval(fgets($f));
-            fclose($f);
+
+
+
+        $result = $this->conn->query("SELECT count(*)
+        FROM information_schema.TABLES
+        WHERE (TABLE_SCHEMA = 'kosher') AND (TABLE_NAME = 'versions')
+        ");
+
+
+        if(!$result->current_field){
+
+            $this->query("CREATE TABLE `versions` (
+  `fid` int(11) NOT NULL AUTO_INCREMENT,
+  `file` varchar(255) NOT NULL DEFAULT '',
+  `result` varchar(5000) NOT NULL,
+  `date` datetime DEFAULT NULL,
+  PRIMARY KEY (`fid`,`file`)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1");
+
         }
 
-        return $version;
+
     }
 
     /**
@@ -196,8 +232,11 @@ class Migrate
      */
     private function query($query)
     {
+
+
         $result = $this->conn->query($query);
-        if (!$result) {
+        print_r($result);
+        if (false) {
             echo "Migration failed: " . $this->conn->errorInfo() . "\n";
             echo "Aborting.\n";
             $this->conn->rollBack();
@@ -217,7 +256,10 @@ class Migrate
         $files = [];
         $dir   = @opendir($this->getMigrationDirectory());
         while ($file = @readdir($dir)) {
-            if (substr($file, 0, strlen(static::MIGRATE_FILE_PREFIX)) == static::MIGRATE_FILE_PREFIX) {
+            if (substr($file, 0, strlen(static::MIGRATE_FILE_PREFIX_VESSY)) == static::MIGRATE_FILE_PREFIX_VESSY) {
+                $files[] = $file;
+            }
+            if (substr($file, 0, strlen(static::MIGRATE_FILE_PREFIX_CECO)) == static::MIGRATE_FILE_PREFIX_CECO) {
                 $files[] = $file;
             }
         }
@@ -233,9 +275,21 @@ class Migrate
      *
      * @return int
      */
+
+    private function UpdateVersionFromFile($file,$result)
+    {
+
+
+      $this->conn->query("INSERT INTO `versions` (`file`, `result`, `date`) VALUES ('".$file."', '".print_r($result,true)."', NOW())" );
+
+    }
     private function getVersionFromFile($file)
     {
-        return intval(substr($file, strlen(static::MIGRATE_FILE_PREFIX)));
+
+
+        $result = $this->conn->query("SELECT * FROM `versions` WHERE `file`='".$file."';");
+
+        return $result->num_rows;
     }
 
     /**
