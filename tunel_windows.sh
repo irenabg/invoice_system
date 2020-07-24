@@ -1,7 +1,7 @@
 #!/bin/bash
 docker run --rm -v  `pwd -W`/etc/ssl:/certificates -e "SERVER=localhost" jacoelho/generate-certificate
 
-docker stop kosherkaddy_web_1
+docker stop $(docker inspect -f '{{.Name}}' $(docker-compose ps -q web) | cut -c 2- )
 docker stop $(docker ps -a -q  --filter ancestor=wernight/ngrok)
 
 
@@ -10,7 +10,7 @@ docker pull gtriggiano/ngrok-tunnel
 
 docker-compose up --build -d
 docker network create mynet_kosher
-docker network connect mynet_kosher kosherkaddy_web_1
+docker network connect mynet_kosher $(docker inspect -f '{{.Name}}' $(docker-compose ps -q web) | cut -c 2- )
 
 echo -n "Do you wish to start cron process (y/n)? "
 read answer
@@ -46,8 +46,8 @@ read answer
 # if echo "$answer" | grep -iq "^y" ;then
 
 if [ "$answer" != "${answer#[Yy]}" ] ;then
-winpty docker run --network mynet_kosher --rm -it wernight/ngrok ngrok  http kosherkaddy_web_1:80
+winpty docker run --network mynet_kosher --rm -it wernight/ngrok ngrok  http $(docker inspect -f '{{.Name}}' $(docker-compose ps -q web) | cut -c 2- ):80
 else
-winpty docker run --network mynet_kosher --rm -it wernight/ngrok ngrok  http kosherkaddy_web_1:80
+winpty docker run --network mynet_kosher --rm -it wernight/ngrok ngrok  http $(docker inspect -f '{{.Name}}' $(docker-compose ps -q web) | cut -c 2- ):80
 fi
 
