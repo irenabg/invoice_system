@@ -40,6 +40,8 @@ services:
       - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
       - 'MYSQL_USER=${MYSQL_USER}'
       - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+      - 'TZ=America/New_York'
+
     ports:
       - '8989:3306'
     volumes:
@@ -62,7 +64,7 @@ services:
        - /ssl_certs:/var/lib/https-portal
      environment:
        DOMAINS: 'dev2.kosherkaddy.com -> http://173.255.234.32:8081' # Notice it's "=>" instedad of the normal "->"
-       STAGE: 'production' # Don't use production until staging works
+       #STAGE: 'production' # Don't use production until staging works
 
        #DOMAINS: 'YOUR_FQDN -> http://web:80 #staging' # Uncomment when you want to test a staging cert.
        #DOMAINS: 'YOUR_FQDN -> http://web:80 #production' # Uncomment when you are ready for production.

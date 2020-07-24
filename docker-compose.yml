@@ -40,6 +40,8 @@ services:
       - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
       - 'MYSQL_USER=${MYSQL_USER}'
       - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+      - 'TZ=America/New_York'
+
     ports:
       - '7979:3306'
     volumes:
