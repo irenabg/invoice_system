@@ -22,15 +22,12 @@ RUN apt-get update; \
     apt-get install -y gifsicle
 
 #Install Cron
-RUN apt-get -y install cron
-
-RUN touch /etc/cron.d/crontab
-
+#RUN apt-get -y install cron
+#RUN touch /etc/cron.d/crontab
 # Give execution rights on the cron job test
-RUN chmod 0644 /etc/cron.d/crontab
-
-RUN echo "ENV=${ENV}"  >> /etc/cron.d/crontab
-RUN echo "*/30   *        *	*	*	root  /usr/local/bin/php /usr/local/www/yeptext.protexting.com/bin/watchdogfatalerror.php " >> /etc/cron.d/crontab
+#RUN chmod 0644 /etc/cron.d/crontab
+#RUN echo "ENV=${ENV}"  >> /etc/cron.d/crontab
+#RUN echo "*/30   *        *	*	*	root  /usr/local/bin/php /usr/local/www/yeptext.protexting.com/bin/watchdogfatalerror.php " >> /etc/cron.d/crontab
 
 
 # Create the log file to be able to run tail

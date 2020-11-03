@@ -5,13 +5,13 @@ services:
     volumes:
       - './etc/nginx/default.conf:/etc/nginx/conf.d/default.conf'
       - './etc/ssl:/etc/ssl'
-      - './web:/usr/local/www/kosherkaddy.com'
+      - './web:/usr/local/www/invoice'
       - './etc/nginx/default.template.conf:/etc/nginx/conf.d/default.template'
       - './etc/nginx/rewriterules:/etc/nginx/includes/rewriterules'
     ports:
-      - '8085:80'
-      - '4043:443'
-      - '8075:81'
+      - '8086:80'
+      - '4042:443'
+      - '8076:81'
     environment:
       - 'NGINX_HOST=${NGINX_HOST}'
     command: >-
@@ -20,31 +20,31 @@ services:
     restart: always
     depends_on:
       - php
-      - mysqldb
+#      - mysqldb
   php:
     build: ./web
     volumes:
       - './etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini'
-      - './web:/usr/local/www/kosherkaddy.com'
+      - './web:/usr/local/www/invoice'
 
-  mysqldb:
-    build: ./web/mysql-build
-    container_name: '${MYSQL_HOST}'
-    restart: always
+#  mysqldb:
+#    build: ./web/mysql-build
+#    container_name: '${MYSQL_HOST}'
+#    restart: always
 
-    env_file:
-      - .env
-    environment:
-      - 'MYSQL_HOST=${MYSQL_HOST}'
-      - 'MYSQL_DATABASE=${MYSQL_DATABASE}'
-      - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
-      - 'MYSQL_USER=${MYSQL_USER}'
-      - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
-      - 'TZ=America/New_York'
+#    env_file:
+#      - .env
+#    environment:
+#      - 'MYSQL_HOST=${MYSQL_HOST}'
+#      - 'MYSQL_DATABASE=${MYSQL_DATABASE}'
+#      - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
+#      - 'MYSQL_USER=${MYSQL_USER}'
+#      - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+#      - 'TZ=America/New_York'
 
-    ports:
-      - '7979:3306'
-    volumes:
-      - './data/db/mysql:/var/lib/mysql:rw,delegated'
-      - './etc/mysql/my.cnf:/etc/alternatives/my.cnf'
+#    ports:
+#      - '7979:3306'
+#    volumes:
+#      - './data/db/mysql:/var/lib/mysql:rw,delegated'
+#      - './etc/mysql/my.cnf:/etc/alternatives/my.cnf'
 

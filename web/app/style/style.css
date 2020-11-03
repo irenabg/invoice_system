@@ -1,0 +1,30 @@
+#success_message{ display: none;}
+
+.width{
+    width: 40% !important;
+}
+.add{
+    width: 18%;
+}
+.div {
+    height: 100%;
+    overflow: hidden;
+}
+
+.div {
+    display: flex;
+    justify-content: center;
+}
+
+#object {
+    height: 100px;
+    padding-left: 261px;
+    align-self: center;
+}
+#hidden {
+    display:none;
+}
+
+.input_group {
+    width: 200%;
+}
